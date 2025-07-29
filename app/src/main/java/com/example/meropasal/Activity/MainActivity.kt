@@ -28,7 +28,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
+
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -51,11 +55,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.constraintlayout.compose.ConstraintLayout
+
 import androidx.core.content.ContextCompat.startActivity
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.example.meropasal.Model.CategoryModel
 import com.example.meropasal.Model.ItemsModel
 import com.example.meropasal.Model.SliderModel
 import com.example.meropasal.R
@@ -112,8 +115,13 @@ fun MainActivityScreen(
     val viewModel= MainViewModel()
     val context = LocalContext.current
     var username by remember { mutableStateOf("User") }
+    var refreshKey by remember { mutableStateOf(0) }
     
-    LaunchedEffect(refreshTrigger) {
+    fun refreshData() {
+        refreshKey++
+    }
+    
+    LaunchedEffect(refreshTrigger, refreshKey) {
         val sharedPref = context.getSharedPreferences("user_session", Context.MODE_PRIVATE)
         val currentUserId = sharedPref.getString("current_user_id", null)
         
@@ -131,16 +139,14 @@ fun MainActivityScreen(
     }
 
     val banners = remember { mutableStateListOf<SliderModel>() }
-    val categories = remember { mutableStateListOf<CategoryModel>() }
     val Popular= remember { mutableStateListOf<ItemsModel>() }
 
     var showBannerLoading by remember { mutableStateOf(true) }
-    var showCategoryLoading by remember { mutableStateOf(true) }
     var showPopularLoading by remember { mutableStateOf(true) }
 
 
     // banner
-    LaunchedEffect(refreshTrigger) {
+    LaunchedEffect(refreshTrigger, refreshKey) {
         showBannerLoading = true
         viewModel.loadBanner().observeForever{
             banners.clear()
@@ -149,18 +155,10 @@ fun MainActivityScreen(
         }
     }
 
-    // category
-    LaunchedEffect(refreshTrigger) {
-        showCategoryLoading = true
-        viewModel.loadCategory().observeForever{
-            categories.clear()
-            categories.addAll(it)
-            showCategoryLoading=false
-        }
-    }
+
 
     // Popular
-    LaunchedEffect(refreshTrigger) {
+    LaunchedEffect(refreshTrigger, refreshKey) {
         showPopularLoading = true
         viewModel.loadPopular().observeForever {
             Popular.clear()
@@ -171,18 +169,15 @@ fun MainActivityScreen(
     }
 
 
-    ConstraintLayout (modifier = Modifier.background(Color.White)){
-        val(scrollList, bottomMenu)=createRefs()
-        LazyColumn (
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White)
+    ) {
+        LazyColumn(
             modifier = Modifier
-                .fillMaxSize()
-                .constrainAs(scrollList){
-                    top.linkTo(parent.top)
-                    bottom.linkTo(parent.bottom)
-                    start.linkTo(parent.start)
-                    end.linkTo(parent.end)
-
-                }
+                .fillMaxWidth()
+                .weight(1f)
         ){
             item {
                 Row (
@@ -207,6 +202,16 @@ fun MainActivityScreen(
                             contentDescription = null
                         )
                         Spacer(modifier = Modifier.width(16.dp))
+                        IconButton(
+                            onClick = { refreshData() }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = "Refresh",
+                                tint = Color.Black
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
                         Image(
                             painter = painterResource(R.drawable.bell_icon),
                             contentDescription = null
@@ -232,37 +237,8 @@ fun MainActivityScreen(
                 }
             }
 
-            // categories
             item {
-                Text(
-                    text="Official Brand",
-                    color = Color.Black,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top=24.dp)
-                        .padding(horizontal = 16.dp)
-                )
-            }
-
-            item{
-                if(showCategoryLoading){
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp),
-                        contentAlignment = Alignment.Center
-                    ){
-                        CircularProgressIndicator()
-                    }
-                } else {
-                    CategoryList(categories)
-                }
-            }
-
-            item {
-                SectionTitle("Most Popular", "See All")
+                SectionTitle("All Products", "")
             }
             item {
                 if(showPopularLoading){
@@ -274,17 +250,14 @@ fun MainActivityScreen(
                         CircularProgressIndicator()
                     }
                 } else {
-                    ListItems(Popular)
+                    ListItemsFullSize(Popular)
                 }
             }
         }
 
         BottomMenu(
             modifier = Modifier
-                .fillMaxWidth()
-                .constrainAs(bottomMenu) {
-                    bottom.linkTo(parent.bottom)
-                },
+                .fillMaxWidth(),
             onCartClick = onCartClick,
             onAddProductClick = onAddProductClick,
             onOrdersClick = onOrdersClick,
@@ -293,65 +266,7 @@ fun MainActivityScreen(
     }
 }
 
-@Composable
-fun CategoryList(categories: SnapshotStateList<CategoryModel>) {
-    var selectedIndex by remember { mutableStateOf(-1) }
-    val context = LocalContext.current
 
-    LazyRow(modifier = Modifier
-        .fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(24.dp),
-        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top=8.dp)
-
-    ) {
-        items(categories.size) {index->
-            CategoryItem(item = categories[index],
-                isSelected = selectedIndex==index,
-                onItemClick = {
-                    selectedIndex=index
-                    Handler(Looper.getMainLooper()).postDelayed({
-                        val intent= Intent(context, ListItemsActivity::class.java).apply {
-                            putExtra("id", categories[index].id.toString())
-                            putExtra("title", categories[index].title)
-                        }
-                        startActivity(context, intent, null)
-                    }, 500)
-                }
-            )
-        }
-    }
-}
-
-@Composable
-fun CategoryItem(item: CategoryModel, isSelected: Boolean, onItemClick:()->Unit){
-    Column (
-        modifier = Modifier
-            .clickable(onClick = onItemClick), horizontalAlignment = Alignment.CenterHorizontally){
-        AsyncImage(
-            model = (item.picUrl),
-            contentDescription = item.title,
-            modifier = Modifier
-                .size(if(isSelected)60.dp else 50.dp)
-                .background(
-                    color = if(isSelected)colorResource(R.color.darkBrown)else colorResource(R.color.lightBrown),
-                    shape = RoundedCornerShape(100.dp)
-                ),
-            contentScale = ContentScale.Inside,
-            colorFilter = if(isSelected){
-                ColorFilter.tint(Color.White)
-            } else{
-                ColorFilter.tint(Color.Black)
-            }
-        )
-        Spacer(modifier = Modifier.padding(top=8.dp))
-        Text(
-            text = item.title,
-            color = colorResource(R.color.darkBrown),
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold
-        )
-    }
-
-}
 
 
 @Composable

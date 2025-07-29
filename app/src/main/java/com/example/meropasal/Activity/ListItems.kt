@@ -16,8 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 
@@ -40,10 +38,10 @@ import com.example.meropasal.Model.ItemsModel
 import com.example.meropasal.R
 
 @Composable
-fun PopularItem(items: List<ItemsModel>, pos: Int){
+fun PopularItem(items: List<ItemsModel>, pos: Int, modifier: Modifier = Modifier){
     val context = LocalContext.current
 
-    Column(modifier = Modifier
+    Column(modifier = modifier
         .padding(8.dp)
         .wrapContentHeight()
     ) {
@@ -118,15 +116,31 @@ fun ListItems(items: List<ItemsModel>){
 
 @Composable
 fun ListItemsFullSize(items: List<ItemsModel>){
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
+    Column(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 8.dp, vertical = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 16.dp)
     ) {
-        items(items.size){row->
-            PopularItem(items, row)
+        for (i in items.indices step 2) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                PopularItem(
+                    items = items,
+                    pos = i,
+                    modifier = Modifier.weight(1f)
+                )
+                if (i + 1 < items.size) {
+                    PopularItem(
+                        items = items,
+                        pos = i + 1,
+                        modifier = Modifier.weight(1f)
+                    )
+                } else {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+            }
         }
     }
 }
