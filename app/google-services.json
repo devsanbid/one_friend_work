@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "916588947500",
+    "firebase_url": "https://cloth-c8564-default-rtdb.firebaseio.com",
+    "project_id": "cloth-c8564",
+    "storage_bucket": "cloth-c8564.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:916588947500:android:5afba50aecaa4705ca0989",
+        "android_client_info": {
+          "package_name": "com.example.meropasal"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAdYoBr5G1cvE_F1pNkQKM4GtH-j2xzwq4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
